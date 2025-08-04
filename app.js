@@ -114,8 +114,8 @@ async function handleOcoCancel(symbol, positionSide) {
       const n = await cancelBySide(symbol, positionSide || "BOTH?");
       log(`[OCO] canceled ${n} orders on ${symbol} side=${positionSide}`);
     } else {
-      await cancelAllOpenOrders(symbol);
-      log(`[OCO] canceled ALL open orders on ${symbol}`);
+      let cancelled = await cancelAllOpenOrders(symbol);
+      log(`[OCO] canceled ALL open orders on ${cancelled} orders on ${symbol}`);
     }
   } catch (e) {
     warn("[OCO] cancel error:", e?.message || e);
@@ -129,6 +129,7 @@ function onMessage(data) {
   if (m.e !== "ORDER_TRADE_UPDATE") return;
   state.lastEventAt = Date.now();
   const o = m.o;
+  console.log("[OCO] order update:", o);
   if (isCloseFilled(o)) {
     state.lastOrderUpdateAt = Date.now();
     const symbol = o.s;
