@@ -98,7 +98,7 @@ let kaTimer = null;
 let backoffMs = 1000;
 
 function isCloseFilled(o) {
-  const type = o?.o;   // order type
+  const type = o?.ot;   // order type (e.g. STOP_MARKET), Don't use o.o because it can be "LIMIT" or "MARKET" for TP/SL
   const status = o?.X; // FILLED, NEW, etc.
   const closePos = o?.cp === true || o?.cp === "true";
   const closeType = type === "STOP_MARKET" || type === "TAKE_PROFIT_MARKET" || type === "STOP" || type === "TAKE_PROFIT";
@@ -129,7 +129,6 @@ function onMessage(data) {
   if (m.e !== "ORDER_TRADE_UPDATE") return;
   state.lastEventAt = Date.now();
   const o = m.o;
-  console.log("[OCO] order update:", o);
   if (isCloseFilled(o)) {
     state.lastOrderUpdateAt = Date.now();
     const symbol = o.s;
