@@ -68,7 +68,17 @@ async function deleteListenKey(listenKey) {
 
 // ---- cancel helpers ----
 async function cancelAllOpenOrders(symbol) {
-  await signed("DELETE", "/fapi/v1/allOpenOrders", { symbol });
+  const open = await signed("GET", "/fapi/v1/openOrders", { symbol });
+  const count = Array.isArray(open) ? open.length : 0;
+  let error = null;
+  if (count > 0) {
+    try {
+      await signed("DELETE", "/fapi/v1/allOpenOrders", { symbol });
+    } catch (e) {
+      error = e?.message || String(e);
+    }
+  }
+  return { count, error };
 }
 async function cancelBySide(symbol, positionSide) {
   const open = await signed("GET", "/fapi/v1/openOrders", { symbol });
@@ -114,8 +124,12 @@ async function handleOcoCancel(symbol, positionSide) {
       const n = await cancelBySide(symbol, positionSide || "BOTH?");
       log(`[OCO] canceled ${n} orders on ${symbol} side=${positionSide}`);
     } else {
-      let cancelled = await cancelAllOpenOrders(symbol);
-      log(`[OCO] canceled ALL open orders on ${cancelled} orders on ${symbol}`);
+      const { count, error } = await cancelAllOpenOrders(symbol);
+      if (error) {
+        warn(`[OCO] cancel ALL open orders FAILED on ${symbol} (open=${count}): ${error}`);
+      } else {
+        log(`[OCO] canceled ALL open orders on ${symbol} (count=${count})`);
+      }
     }
   } catch (e) {
     warn("[OCO] cancel error:", e?.message || e);
